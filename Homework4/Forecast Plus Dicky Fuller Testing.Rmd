@@ -1,0 +1,144 @@
+---
+title: "Forecast plus Dickey Fuller Testing"
+author: "Ze Zheng"
+date: "3/3/2021"
+output: pdf_document
+---
+What I forecast for non-farm payroll for the month of February 2021 will be 181K. According to the fxstreet there is a checklist that has to be gone through to see the forecast for the non-farm payrolls for February will be. The challenge Job cuts, the corporate layoffs in the US have stabilized just below 80K per month, which is just a bit over the usual pre pandemic levels. The first time employment claims 4 week average has stabilized above 800K. The unemployment-benefits claimants' downtrend is still going strong, falling below 5 million for the first time since Covid stopped economic activity. The labor sub-index US main service survey rallied in January to 55.2, which is its highest since last February, this is a positive. Also the employment sub-index in the US main manufacturing survey has been rising to around 52.6 which is the highest since June 2019. The UMich consumer sentiment survey has remained around 80 which is way below pre-covid level, this is a negative. But the private sector employment bounced back in January back into positive in a 174K job gain. THis is how they reached a consensus of 180K as the non-farm payroll for this February. But I believe that with these positive advantages of the vaccine being avaiable for first responders, I believe that the non-farm payroll for the month of February will be 181K.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(knitr)
+library(tidyverse)
+library(readr)
+library(urca)
+library(tseries)
+library(forecast)
+library(stargazer)
+library(dynlm)
+
+Data<-read_excel("Homewrk4.xls")
+
+```
+
+
+```{r Unemployment Rate, echo=FALSE}
+ggplot(Data)+
+  geom_line(aes(x=Month,y=UN),color="blue")+
+  labs(y= "Unemployment Rate", title="Unemployment Rate since 2016")
+
+```
+
+
+```{r Real Interest Rate, echo=FALSE}
+ggplot(Data)+
+  geom_line(aes(x=Month,y=Bonds),color="red")+
+  labs(x = "Month", y = "Real Interest Rates", title="Real Interest Rate since 2016")
+```
+```{r Inflation rate, echo=FALSE}
+ggplot(Data)+
+  geom_line(aes(x=Month,y=IN),color="hot pink")+
+  labs(y="Inflation Rate", title="Inflation Rate since 2016")
+```
+```{r Non-Farm Payrolls, echo=FALSE}
+ggplot(Data)+
+  geom_line(aes(x=Month,y=NFP),color="orange")+
+  labs(y="Non-Farm Payrolls", title="Non-Farm Payrolls since 2016")
+
+```
+```{r New One Family Houses Sold: United States, echo=FALSE}
+ggplot(Data)+
+  geom_line(aes(x=Month,y=NHS),color="orange")+
+  labs(y="New One Family Houses Sold", title="New One Family Houses Sold: United States since 2016")
+
+```
+```{r Dickey Fuller Testing, echo=FALSE}
+Data<-Data%>% mutate(d_un_level=UN-lag(UN),
+l_un_level=lag(UN),
+d_bonds=Bonds-lag(Bonds),
+l_Bonds=lag(Bonds),
+d_NHS=NHS-lag(NHS),
+l_NHS=lag(NHS),
+d_IN=IN-lag(IN),
+l_IN=lag(IN),
+d_NFP=NFP-lag(NFP),
+l_NFP=lag(NFP)
+)
+
+adf.test(Data$Bonds) # How to find lag Real Interest Rate
+
+# Dickey Fuller test result for Real Interest Rate(H_{0,1} and H_{0.2})
+summary(ur.df(Data$Bonds,type="trend",lags = 3))
+```
+
+```{r echo=FALSE}
+# Dickey Fuller test result for Real Interest Rate(H_{0,5}
+summary(ur.df(Data$Bonds,type="drift",lags = 3))
+```
+
+```{r}
+# Dickey Fuller test result for Real Interest Rate(H_{0,5}
+summary(ur.df(Data$Bonds,type="none",lags = 3))
+```
+```{r}
+adf.test(Data$UN) # How to find lag Unemployment Rate
+```
+```{r}
+# Dickey Fuller test result for Real Interest Rate(H_{0,1} and H_{0.2})
+summary(ur.df(Data$UN,type="trend",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for Unemployment Rate (H_{0,5})
+summary(ur.df(Data$UN,type="drift",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for Unemployment Rate (H_{0,9})
+summary(ur.df(Data$UN,type="none",lags = 3))
+```
+```{r}
+adf.test(Data$NHS) # How to find lag New One Family Houses Sold
+```
+```{r}
+# Dickey Fuller test result for New One Family Houses Sold (H_{0,1} and H_{0.2})
+summary(ur.df(Data$NHS,type="trend",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for New One Family Houses Sold (H_{0,5})
+summary(ur.df(Data$NHS,type="drift",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for New One Family Houses Sold  (H_{0,9})
+summary(ur.df(Data$NHS,type="none",lags = 3))
+```
+```{r}
+adf.test(Data$NFP) # How to find lag Non-Farm Payrolls
+```
+```{r}
+# Dickey Fuller test result for Non-Farm Payrolls (H_{0,1} and H_{0.2})
+summary(ur.df(Data$NFP,type="trend",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for Non-Farm Payrolls (H_{0,5})
+summary(ur.df(Data$NFP,type="drift",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for Non-Farm Payrolls  (H_{0,9})
+summary(ur.df(Data$NFP,type="none",lags = 3))
+```
+```{r}
+adf.test(Data$IN) # How to find lag Inflation rate
+```
+```{r}
+# Dickey Fuller test result for inflation Rate (H_{0,1} and H_{0.2})
+summary(ur.df(Data$IN,type="trend",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for Non-Farm Payrolls (H_{0,5})
+summary(ur.df(Data$IN,type="drift",lags = 3))
+```
+```{r}
+# Dickey Fuller test result for Non-Farm Payrolls  (H_{0,9})
+summary(ur.df(Data$IN,type="none",lags = 3))
+```

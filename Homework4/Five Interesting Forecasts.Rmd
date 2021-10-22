@@ -1,0 +1,63 @@
+---
+title: 'Five Interesting  Economic Time Series'
+author: "Ze Zheng"
+date: "2/25/2022"
+output:
+  beamer_presentation:
+    fig_width: 3
+    fig_height: 2
+  
+---
+```{r message=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(knitr)
+library(tidyverse)
+library(readr)
+library(readxl)
+
+Inflation <-read_excel("IN.xls")
+New_Sales_Housing <-read_excel("NHS.xls")
+NFP<- read_excel("NFP.xls")
+TB<- read_excel("Bonds.xls")
+UN<-read_excel("Unemployment.xls")
+```
+
+## US New Home Sales Index
+```{r echo=FALSE, message=FALSE}
+ggplot(New_Sales_Housing,aes(x=Month,y=NHS))+
+  geom_line(col="red") + labs(x = "Month", y = "US New Home Sales", title="New One Family Houses Sold: United States")
+```
+The US Pending Home Sales Index is a leading indicator of housing activity, which measures housing contract activity. Liz Ann Sonders said "Jan pending home sales weaker than expected at -2.8% vs. flat est & +0.5% in prior month (rev up from -0.3%); level has cooled to 6m low but still quite elevated relative to history". 
+
+## Total NonFarm Payrolls
+```{r echo=FALSE, message=FALSE}
+ggplot(NFP,aes(x=Month,y=NFP))+
+  geom_line(col="orange") + labs(x = "Month", y = "Non Farm Payrolls", title="Total Nonfarm Private Payroll Employment")
+```
+Non-Farm payrolls is a compiled name for goods, construction and manufacturing companies in the US. It does not include farm workers, private household employees, or non-profit organization employees. The total nonfarm payroll provides useful insights into the current economic situation because it can represent the number of jobs added or lost in an economy. We can see that due to Covid we see a dramatic decrease in the non farm payrolls, where there was a sudden loss good jobs in all places causing the non-farm payrolls to drop.
+
+## Unemployment Rate
+```{r echo=FALSE, message=FALSE}
+ggplot(UN,(aes(x=Month,y=UNR)))+
+  geom_line(col="hotpink")+ labs(x = "Month", y = "Unemployment", title="Unemployment rate")
+```
+The unemployment rate represents the number of unemployed as a percentage of the labor force. Labor force data are restricted to people 16 years of age and older, who currently reside in 1 of the 50 states or the District of Columbia,
+
+
+## 10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity
+```{r echo=FALSE, message=FALSE}
+ggplot(TB,(aes(x=Month,y=Bonds)))+
+  geom_line(col="green")+ labs(x = "Month", y = "Real Interest Rates", title="10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity")
+```
+This is the calculation of the real interest rate that is directly obtained from the US Treasury Department daily. We can see that the real interest rates were falling though out from around 2017 where it fell to its lowest in August 2019 but then we see it slowly rising until Covid hit then it suddently dropped again. Now with Covid we can see that real interest rates are increasing at an exponental rate again.
+
+
+##  10-Year Breakeven Inflation Rate
+```{r echo=FALSE, message=FALSE}
+ggplot(Inflation,(aes(x=Month,y=Inflation)))+
+  geom_line(col="blue")+ labs(x = "Month", y = "Inflation", title="10-Year Breakeven Inflation Rate")
+```
+The breakeven inflation rate represents a measure of expected inflation derived from 10-Year Treasury Constant Maturity Securities (BC_10YEAR) and 10-Year Treasury Inflation-Indexed Constant Maturity Securities (TC_10YEAR). The latest value implies what market participants expect inflation to be in the next 10 years, on average. Economist say a key factor in predicting inflation is the amount of spare capacity and the rate of economic growth.
+
+
+

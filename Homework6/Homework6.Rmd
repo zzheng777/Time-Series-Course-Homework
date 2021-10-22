@@ -1,0 +1,288 @@
+---
+title: "Homework 6"
+author: "Ze Zheng"
+date: "3/15/2021"
+output:
+  pdf_document: default
+
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(knitr)
+library(forecast)
+library(tseries)
+library(urca)
+library(stargazer)
+library(ggthemes)
+library(tidyverse)
+library(vars)
+
+rm(list=ls())
+
+Data<-read_excel("ForcastData.xls")
+```
+\section{Introduction}
+Forecasting is a very difficult thing to do because it is based on numerous variables that can change at amoment's notice. If there was a way to forecast correctly then it would be a very lucrative business. I decided to use ARIMA (p,d,q) order to forecast the 5 different series that I have selected which are: New One Family Houses Sold: the United States, 10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity, 10-Year Breakeven Inflation Rate, Unemployment Rate, and Non-Farm Private Employment. All the data come from the FRED, looking at the data in a monthly interval from January 1, 2003, to January 1, 2021.
+
+
+
+```{r NHS, include=FALSE}
+NHousesS <- ts(Data$NHS, start = c(2003,01),frequency = 12)
+ts.plot(NHousesS)
+
+ggplot(Data)+
+  geom_line(aes(x=Month,y=NHS),color="hotpink")+
+  labs(y= "Number of Houses Sold", title="Number New One Family Houses Sold: United Statessince 2003")+theme_dark()
+
+Data<-Data %>% mutate(d_NHS= Data$NHS-lag(Data$NHS),
+                    t=1:nrow(Data))
+
+```
+\section{Emperical Anaylsis for New One Family Houses Sold: United States}
+\subsection{Dickey Fuller Test}
+To determine if the series New One Family Houses Sold: United States is a Process I(1) or a Process I(0). We decided to use the Fuller Dickey Test, where my $\tau_\tau$ critical value is |-3.43| and my test-statistic is |-0.6492|. Since my critical value is greater than the test-statistic, we fail to reject the $H_{0,1}$, which proves that our series has a unit root but we do not know if is a linear time trend. So then we move on to our $H_{0,2}$ where we compare the critical value of $\phi_3$ which is 6.49  to our test-statistic which is 6.7127. Our test-statistic is greater than our critical value so we reject our $H_{0,2}$ meaning that $\gamma$ is equal to zero but our $\sigma$ does not equal zero. We move on to $H_{0,3}$ using linear regression we figure out that the t-statistic is |-0.047| and the critical value is |-1.652039|. So this means we fail to reject and there is no time trend so we move to $H_{0,5}$. We see that our $\tau_\mu$ is |-2.88| and our test-statistic is |-2.61|. Since our test-statistic is less than our $\tau_\mu$ we fail to reject meaning that series appears to have a unit root, but we do not know if there is adrift in the DGP. We move to $H_{0,6}$ using $\phi_1$ where our critical value is 4.63 and our test-statistic is 3.4105, we see that our test statistic is less than our critical value so we fail to reject $H_{0,6}$. Therefore showing that the series appears to have a unit root, with no drift or trend, but we do not know if it is a pure random walk. So we decided to test $H_{0,9}$ where our critical value is |-1.95| and my test-statistic is |-0.9136|. We fail to reject $H_{0,9}$, concluding that our series appears to have a unit root, I(1). Pure Random Walk.
+```{r Dickey-Fuller, include=FALSE}
+summary(ur.df(Data$NHS, type="trend", selectlags = "AIC", lags=20))
+#Reject H_03
+drift_reg<-lm(d_NHS~lag(d_NHS,1), data=Data)
+summary(drift_reg)
+qt(0.05,213)
+summary(ur.df(Data$NHS, type="drift", selectlags = "AIC", lags=20))
+summary(ur.df(Data$NHS, type="none", selectlags = "AIC", lags=20))
+```
+
+\subsection{ARIMA Testing}
+For New One Family Houses Sold: the United States, we decided to test the test for the number of significant values of Q spikes to get the AR order. We first try to get we take the ggacf of our number of one-family houses sold but we find that there is significance in all the lags meaning that we need to find the difference of the series because our series is a pure random walk. Which when we try to get the difference of our Acf value of the new family houses sold we get 2 spikes of significance for q. Then we also have to find the difference of the series without Pacf value which we believe that there are 2 significant spikes. Which determines our ARIMA (p,d,q) order to be 2,1,2. But we have a built-in function in r that helps us determine the best ARIMA order model so we use that and the ARIMA order for the difference of the series is ARIMA (2,0,5) with zero means. Which then we use the ts diagnostic function which shows us the Ljung-Box statistic since our p-value is greater than the null which is Acf=0. We fail to reject the null hypothesis thus proving no autocorrelation. 
+
+
+```{r Number of Houses Sold, include=FALSE}
+#Calculate the Q number of significant spikes
+acf(Data$NHS) #All significant so switch to diff
+
+#Calculate the P number of significant spikes
+pacf(Data$NHS)
+
+#ggplot versions
+ggAcf(Data$NHS)
+ggPacf(Data$NHS)
+
+#ARMA Process
+ggAcf(diff(Data$NHS))
+ggPacf(diff(Data$NHS))
+
+auto.arima(Data$NHS)
+#ARIMA (2,1,5)
+auto.arima(diff(Data$NHS))
+#ARIMA (2,0,5) with zero mean
+
+
+NHS_arima<- Arima(NHousesS, order=c(2,0,5),include.mean = F)#Order goes like c(P,D,Q) D 1 is stationary, 2 is non-stationary
+tsdiag(NHS_arima)
+f_NHS<-forecast(NHS_arima,h=12)
+f_NHS
+```
+\section{Forecast for New One Family Houses Sold: United States}
+The ARIMA Order according to the ARIMA function in r (2,0,5) with zero mean.
+\newline
+The forecasts show that in the coming months the number of New One Family Houses to be Sold in the United States will have a slight increase then will decrease with a flatter linear slope. Looking at my forecast from February 2021 which is 921.8919 to January 2022 which is 907.1616. Therefore it tells us that the Number of One Family Houses sold will decrease as we approach 2022. 
+\newline
+```{r Forcast for NHS, echo=FALSE}
+autoplot(f_NHS, xlab="Date",ylab="Number of Houses Sold", main="Forecast of Advance New One Family Houses Sold: United States ")
+```
+\begin{table}[!htbp] \centering 
+  \caption{Forecast of New One Family Houses Sold: United States} 
+  \label{} 
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llll}\hline\hline
+\multicolumn{1}{l}{Time}&\multicolumn{1}{c}{Point Forecast}\tabularnewline
+\hline
+February 2021&921.8919$^{}$\tabularnewline
+March 2021&931.1604$^{}$\tabularnewline
+April 2021&906.1811$^{}$\tabularnewline
+May 2021&911.0854$^{}$\tabularnewline
+June 2021&913.5017$^{}$\tabularnewline
+July 2021&911.5819$^{}$\tabularnewline
+August 2021&911.1939$^{}$\tabularnewline
+September 2021&910.2659$^{}$\tabularnewline
+October  2021&909.5296$^{}$\tabularnewline
+November 2021&908.7265$^{}$\tabularnewline
+December 2021&907.9479$^{}$\tabularnewline
+January 2022&907.1616$^{}$\tabularnewline
+\hline
+\end{tabular*}
+\end{table}
+
+
+
+
+```{r Interest Rate, include=FALSE}
+
+auto.arima(Data$InterestR)
+auto.arima(diff(Data$InterestR))
+
+IR_arima<- Arima(Data$InterestR, order=c(0,1,2))
+tsdiag(IR_arima)
+f_IR<-forecast(IR_arima, h =12)
+f_IR
+
+```
+\section{Forecast for Interest Rates}
+The ARIMA Order according to the ARIMA function in r  is (0,1,2).
+\newline
+The forecast shows us that in February 2021 there is a slight increase but then we see in the forecast in the coming months be the same which tells me that the forecast for interests rates is extremely hard predicted without previous months knowledge.  
+\newline
+```{r echo=FALSE}
+autoplot(f_IR, ylab="Interest Rate Precentage", main="Forecast of Advance 10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity")
+```
+\begin{table}[!htbp] \centering 
+  \caption{Forecast of Interest Rates} 
+  \label{} 
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llll}\hline\hline
+\multicolumn{1}{l}{Time}&\multicolumn{1}{c}{Point Forecast}\tabularnewline
+\hline
+February 2021&0.9929531$^{}$\tabularnewline
+March 2021&0.9809281$^{}$\tabularnewline
+April 2021&0.9809281$^{}$\tabularnewline
+May 2021&0.9809281$^{}$\tabularnewline
+June 2021&0.9809281$^{}$\tabularnewline
+July 2021&0.9809281$^{}$\tabularnewline
+August 2021&0.9809281$^{}$\tabularnewline
+September 2021&0.9809281$^{}$\tabularnewline
+October  2021&0.9809281$^{}$\tabularnewline
+November 2021&0.9809281$^{}$\tabularnewline
+December 2021&0.9809281$^{}$\tabularnewline
+January 2022&0.9809281$^{}$\tabularnewline
+\hline
+\end{tabular*}
+\end{table}
+
+```{r Inflation, include=FALSE}
+
+ggAcf(Data$IN)
+
+ggAcf(diff(Data$IN))
+
+auto.arima(Data$IN)
+auto.arima(diff(Data$IN))
+
+
+IN_arima<- Arima(Data$IN, order=c(2,1,1))
+tsdiag(IN_arima)
+f_IN<-forecast(IN_arima, h =12)
+
+f_IN
+```
+\section{Forecast for Inflation Rate}
+The ARIMA Order according to the ARIMA function in r is (2,1,1).
+\newline
+The forecast shows us that in February 2021 there is a slight increase but then we see in the forecast in the coming months until 2022 we see an exponentially decrease until we have an inflation rate of 1.936489 January 2022. This tells me the inflation rate will decrease as we approach 2022.
+\newline
+```{r echo=FALSE}
+autoplot(f_IN, ylab="Inflation Rate Precentage", main="Forecast of Advanced 10-Year Breakeven Inflation Rate")
+```
+\begin{table}[!htbp] \centering 
+  \caption{Forecast of Inflation Rate} 
+  \label{} 
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llll}\hline\hline
+\multicolumn{1}{l}{Time}&\multicolumn{1}{c}{Point Forecast}\tabularnewline
+\hline
+February 2021&2.137263$^{}$\tabularnewline
+March 2021&2.139694$^{}$\tabularnewline
+April 2021&2.118626$^{}$\tabularnewline
+May 2021&2.089254$^{}$\tabularnewline
+June 2021&2.058990$^{}$\tabularnewline
+July 2021&2.031157$^{}$\tabularnewline
+August 2021&2.006982$^{}$\tabularnewline
+September 2021&1.986657$^{}$\tabularnewline
+October  2021&1.969911$^{}$\tabularnewline
+November 2021&1.956288$^{}$\tabularnewline
+December 2021&1.945301$^{}$\tabularnewline
+January 2022&1.936489$^{}$\tabularnewline
+\hline
+\end{tabular*}
+\end{table}
+
+```{r Unemployment, include=FALSE}
+auto.arima(Data$UN)
+auto.arima(diff(Data$UN))
+
+
+UN_arima<- Arima(Data$UN, order=c(0,1,0))
+tsdiag(UN_arima)
+f_UN<-forecast(UN_arima, h =12)
+f_UN
+```
+\section{Forecast for Unemployment Rate}
+The ARIMA Order according to the ARIMA function in r is (0,1,0).
+\newline
+The forecast shows us that from February 2021 to January 2022 that our Unemployment Rate Percentage is 6.3. We believe since the unemployment rate does not change. Using ARIMA order is not a good way of forecasting the Unemployment Rate since it does show change, which is impossible because the amount of people unemployed to being employed is changing. 
+\newline
+```{r echo=FALSE}
+autoplot(f_UN, ylab="Unemployment Rate", main="Forecast of Advanced Unemployment Rate")
+```
+\begin{table}[!htbp] \centering 
+  \caption{Forecast of Unemployment Rate} 
+  \label{} 
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llll}\hline\hline
+\multicolumn{1}{l}{Time}&\multicolumn{1}{c}{Point Forecast}\tabularnewline
+\hline
+February 2021&6.3$^{}$\tabularnewline
+March 2021&6.3$^{}$\tabularnewline
+April 2021&6.3$^{}$\tabularnewline
+May 2021&6.3$^{}$\tabularnewline
+June 2021&6.3$^{}$\tabularnewline
+July 2021&6.3$^{}$\tabularnewline
+August 2021&6.3$^{}$\tabularnewline
+September 2021&6.3$^{}$\tabularnewline
+October  2021&6.3$^{}$\tabularnewline
+November 2021&6.3$^{}$\tabularnewline
+December 2021&6.3$^{}$\tabularnewline
+January 2022&6.3$^{}$\tabularnewline
+\hline
+\end{tabular*}
+\end{table}
+
+```{r Total Nonfarm Private Payroll Employment, include=FALSE}
+
+auto.arima(Data$NFP)
+auto.arima(diff(Data$NFP))
+
+NFP_arima<- Arima(Data$NFP, order=c(0,1,0))
+tsdiag(NFP_arima)
+f_NFP<-forecast(NFP_arima, h =12)
+f_NFP
+
+```
+
+
+\section{Forecast for Nonfarm Private Payroll Employment}
+The ARIMA Order according to the ARIMA function in r is (0,1,0).
+\newline
+The forecast shows us that from February 2021 to January 2022 that our Unemployment Rate Percentage is 119678.8. We believe since the Nonfarm Private New Labor Force does not change. Using ARIMA order is not a good way of forecasting the Nonfarm Private  New Labor Force since it does show change, which is impossible because the amount of people entering the labor force in the Nonfarm Private sector is always changing.
+\newline
+```{r Forecast, echo=FALSE}
+
+autoplot(f_NFP, ylab="Nonfarm Private Payroll Employment", main=" Forecast of the Advanced Total Nonfarm Private Payroll Employment")
+```
+
+\begin{table}[!htbp] \centering 
+  \caption{Forecast of Nonfarm Private Payroll Employment} 
+  \label{} 
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llll}\hline\hline
+\multicolumn{1}{l}{Time}&\multicolumn{1}{c}{Point Forecast}\tabularnewline
+\hline
+February 2021&119678.8$^{}$\tabularnewline
+March 2021&119678.8$^{}$\tabularnewline
+April 2021&119678.8$^{}$\tabularnewline
+May 2021&119678.8$^{}$\tabularnewline
+June 2021&119678.8$^{}$\tabularnewline
+July 2021&119678.8$^{}$\tabularnewline
+August 2021&119678.8$^{}$\tabularnewline
+September 2021&119678.8$^{}$\tabularnewline
+October  2021&119678.8$^{}$\tabularnewline
+November 2021&119678.8$^{}$\tabularnewline
+December 2021&119678.8$^{}$\tabularnewline
+January 2022&119678.8$^{}$\tabularnewline
+\hline
+\end{tabular*}
+\end{table}
